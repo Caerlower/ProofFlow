@@ -2,6 +2,8 @@
 
 **Verifiable, Pay-As-You-Go Storage Powered by Filecoin Onchain Cloud**
 
+Live site: https://proof-flow.vercel.app/
+
 ---
 
 ## 🌟 Overview
@@ -82,10 +84,10 @@ User/App → ProofFlow SDK (Synapse) → FilecoinWarmStorageService + Filecoin P
 ## 📈 Unique Value (Why ProofFlow?)
 
 * Unlike existing Filecoin solutions (e.g., Estuary, NFT.storage, etc.), ProofFlow is:
-  ✅ **Pay-as-you-go** (not bulk, not flat pricing)
-  ✅ **Streaming payments** (continuous settlement between users & providers)
-  ✅ **Cloud-like UX** (FilCDN retrieval + SDK ease)
-  ✅ **Enterprise-ready** (verifiable proofs + transparent billing)
+✅ **Pay-as-you-go** (not bulk, not flat pricing)
+✅ **Streaming payments** (continuous settlement between users & providers)
+✅ **Cloud-like UX** (FilCDN retrieval + SDK ease)
+✅ **Enterprise-ready** (verifiable proofs + transparent billing)
 
 ---
 
