@@ -2,6 +2,8 @@
 
 import React from 'react'
 import { useAccount } from 'wagmi'
+import { useUSDFCBalance, useStorageUsage } from '@/hooks/useSynapse'
+import { useUSDFCPayments } from '@/hooks/useUSDFCPayments'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -18,35 +20,38 @@ import {
 
 export default function BillingPage() {
   const { isConnected } = useAccount()
+  const { balance, isLoading: balanceLoading, error: balanceError, refetch: refetchBalance } = useUSDFCBalance()
+  const { usage, isLoading: usageLoading, error: usageError, refetch: refetchUsage } = useStorageUsage()
+  const { depositUSDFC, withdrawUSDFC, isProcessing } = useUSDFCPayments()
 
   const billingStats = [
     {
-      title: 'Current Balance',
-      value: '$12.50',
+      title: 'USDFC Balance',
+      value: balance ? `${balance} USDFC` : 'Loading...',
       description: 'Available for storage',
       icon: DollarSign,
-      trend: '+$5.00 this month'
+      trend: balanceLoading ? 'Loading...' : 'Real-time balance'
     },
     {
-      title: 'Monthly Usage',
-      value: '$3.18',
-      description: 'Storage & retrieval costs',
+      title: 'Storage Used',
+      value: usage ? `${usage.used} GB` : 'Loading...',
+      description: 'Current storage usage',
       icon: TrendingUp,
-      trend: '12% increase from last month'
+      trend: usageLoading ? 'Loading...' : `${usage?.daysRemaining || 0} days remaining`
     },
     {
-      title: 'Files Stored',
-      value: '15',
-      description: 'Active storage files',
+      title: 'Storage Allowance',
+      value: usage ? `${usage.allowance} GB` : 'Loading...',
+      description: 'Total storage allowance',
       icon: Upload,
-      trend: '+3 new files'
+      trend: usageLoading ? 'Loading...' : 'Paid storage'
     },
     {
-      title: 'Retrievals',
-      value: '42',
-      description: 'Downloads this month',
-      icon: Download,
-      trend: 'Via FilCDN'
+      title: 'Days Remaining',
+      value: usage ? `${usage.daysRemaining}` : 'Loading...',
+      description: 'Storage validity period',
+      icon: Calendar,
+      trend: usageLoading ? 'Loading...' : 'Days left'
     }
   ]
 
@@ -187,13 +192,63 @@ export default function BillingPage() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Button className="h-20 flex flex-col items-center justify-center gap-2 bg-[#0090FF] hover:bg-[#0078CC] text-white">
-              <CreditCard className="h-6 w-6" />
-              <span>Add Funds</span>
-            </Button>
-            <Button variant="outline" className="h-20 flex flex-col items-center justify-center gap-2">
-              <Receipt className="h-6 w-6" />
-              <span>Download Invoice</span>
+            <div className="space-y-2">
+              <Button 
+                className="h-20 flex flex-col items-center justify-center gap-2 bg-[#0090FF] hover:bg-[#0078CC] text-white w-full"
+                disabled={isProcessing}
+                onClick={() => depositUSDFC('10')} // Deposit 10 USDFC
+              >
+                <CreditCard className="h-6 w-6" />
+                <span>{isProcessing ? 'Processing...' : 'Deposit USDFC'}</span>
+              </Button>
+              <p className="text-xs text-gray-500 text-center">
+                Deposit 10 USDFC tokens
+              </p>
+            </div>
+            
+            <div className="space-y-2">
+              <Button 
+                variant="outline" 
+                className="h-20 flex flex-col items-center justify-center gap-2 w-full"
+                disabled={isProcessing || !balance || parseFloat(balance) < 1}
+                onClick={() => withdrawUSDFC('1')} // Withdraw 1 USDFC
+              >
+                <Receipt className="h-6 w-6" />
+                <span>{isProcessing ? 'Processing...' : 'Withdraw USDFC'}</span>
+              </Button>
+              <p className="text-xs text-gray-500 text-center">
+                Withdraw 1 USDFC tokens
+              </p>
+            </div>
+          </div>
+
+          {/* Error Messages */}
+          {balanceError && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <p className="text-sm text-red-600 dark:text-red-400">
+                Balance Error: {balanceError}
+              </p>
+            </div>
+          )}
+          {usageError && (
+            <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+              <p className="text-sm text-red-600 dark:text-red-400">
+                Usage Error: {usageError}
+              </p>
+            </div>
+          )}
+
+          {/* Refresh Button */}
+          <div className="mt-4 flex justify-center">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                refetchBalance()
+                refetchUsage()
+              }}
+            >
+              Refresh Data
             </Button>
           </div>
         </CardContent>
@@ -255,19 +310,19 @@ export default function BillingPage() {
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white mb-2">Storage Pricing</h4>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>• $0.12 per GB per month</li>
-                <li>• Billed continuously via Filecoin Pay</li>
-                <li>• No minimum storage requirements</li>
+                <li>• Pay-as-you-go with USDFC tokens</li>
+                <li>• One-time payment for 10GB storage (30 days)</li>
                 <li>• Automatic PDP verification included</li>
+                <li>• Synapse SDK handles all complexity</li>
               </ul>
             </div>
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white mb-2">Retrieval Pricing</h4>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
-                <li>• $0.0005 per GB retrieved</li>
-                <li>• FilCDN acceleration included</li>
+                <li>• Free retrieval via FilCDN</li>
+                <li>• Instant access to cached files</li>
                 <li>• No bandwidth limits</li>
-                <li>• Instant retrieval from cache</li>
+                <li>• Multi-provider redundancy</li>
               </ul>
             </div>
           </div>
