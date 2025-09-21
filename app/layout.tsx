@@ -20,9 +20,9 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.app",
+  title: "ProofFlow",
+  description: "Verifiable, Pay-As-You-Go Storage Powered by Filecoin Onchain Cloud",
+  generator: "Next.js",
 }
 
 export default function RootLayout({
