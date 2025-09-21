@@ -5,6 +5,7 @@ import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
 import "./globals.css"
 import SiteHeader from "@/components/site-header"
+import { Providers } from "@/components/Providers"
 
 const geistSans = Geist({
   subsets: ["latin"],
@@ -32,15 +33,17 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geistSans.variable} ${geistMono.variable} antialiased scroll-smooth`}>
       <body className="font-sans" suppressHydrationWarning>
-        <a
-          href="#hero"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:px-3 focus:py-2"
-        >
-          Skip to content
-        </a>
-        <SiteHeader />
-        <Suspense fallback={null}>{children}</Suspense>
-        <Analytics />
+        <Providers>
+          <a
+            href="#hero"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:rounded-md focus:bg-primary focus:text-primary-foreground focus:px-3 focus:py-2"
+          >
+            Skip to content
+          </a>
+          <SiteHeader />
+          <Suspense fallback={null}>{children}</Suspense>
+          <Analytics />
+        </Providers>
       </body>
     </html>
   )
