@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { Menu } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
+import { WalletConnectButton } from "@/components/WalletConnectButton"
 
 function Logo({ className = "h-7 w-auto" }: { className?: string }) {
   return (
@@ -90,9 +91,10 @@ export default function SiteHeader() {
         </ul>
 
         <div className="flex items-center gap-2">
+          <WalletConnectButton />
           <Button asChild size="sm" className="hidden md:inline-flex">
-            <Link href="/#get-started" onClick={handleAnchorClick("/#get-started")}>
-              Launch Demo
+            <Link href="/dashboard" className="bg-[#0090FF] hover:bg-[#0078CC] text-white">
+              Dashboard
             </Link>
           </Button>
 
@@ -124,11 +126,14 @@ export default function SiteHeader() {
                     {l.label}
                   </Link>
                 ))}
-                <Button asChild className="mt-2">
-                  <Link href="/#get-started" onClick={handleAnchorClick("/#get-started")}>
-                    Launch Demo
-                  </Link>
-                </Button>
+                <div className="mt-2 space-y-2">
+                  <WalletConnectButton />
+                  <Button asChild className="w-full">
+                    <Link href="/dashboard">
+                      Dashboard
+                    </Link>
+                  </Button>
+                </div>
               </div>
             </SheetContent>
           </Sheet>
