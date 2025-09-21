@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react'
 import { useAccount } from 'wagmi'
+import { useSynapse, useFileUpload, useFileDownload } from '@/hooks/useSynapse'
+import { useUSDFCPayments, useStorageCosts } from '@/hooks/useUSDFCPayments'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -27,7 +29,12 @@ import {
 
 export default function StoragePage() {
   const { isConnected } = useAccount()
-  const [uploading, setUploading] = useState(false)
+  const { synapse, isLoading: synapseLoading, error: synapseError } = useSynapse()
+  const { uploadFile, isUploading, uploadProgress, error: uploadError } = useFileUpload()
+  const { downloadFile, isDownloading, error: downloadError } = useFileDownload()
+  const { payForStorage, isProcessing: paymentProcessing } = useUSDFCPayments()
+  const { costs, isLoading: costsLoading } = useStorageCosts()
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
   const files = [
     {
@@ -96,12 +103,43 @@ export default function StoragePage() {
     }
   }
 
-  const handleUpload = () => {
-    setUploading(true)
-    // Simulate upload process
-    setTimeout(() => {
-      setUploading(false)
-    }, 3000)
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      setSelectedFile(file)
+    }
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile) return
+
+    try {
+      const result = await uploadFile(selectedFile)
+      console.log('File uploaded successfully:', result)
+      // Reset file selection
+      setSelectedFile(null)
+      // You could add the uploaded file to the files list here
+    } catch (error) {
+      console.error('Upload failed:', error)
+    }
+  }
+
+  const handleDownload = async (pieceCID: string) => {
+    try {
+      const result = await downloadFile(pieceCID)
+      console.log('File downloaded successfully:', result)
+    } catch (error) {
+      console.error('Download failed:', error)
+    }
+  }
+
+  const handlePayForStorage = async () => {
+    try {
+      const result = await payForStorage('10') // Pay for 10GB storage
+      console.log('Storage payment successful:', result)
+    } catch (error) {
+      console.error('Payment failed:', error)
+    }
   }
 
   if (!isConnected) {
@@ -201,21 +239,82 @@ export default function StoragePage() {
               Drop files here or click to upload
             </h3>
             <p className="text-gray-600 dark:text-gray-400 mb-4">
-              Files are stored on Filecoin with PDP verification
+              Files are stored on Filecoin with PDP verification via Synapse SDK
             </p>
+            
+            {/* File Selection */}
+            <div className="mb-4">
+              <input
+                type="file"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="file-upload"
+                accept="*/*"
+              />
+              <label
+                htmlFor="file-upload"
+                className="cursor-pointer bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Choose File
+              </label>
+              {selectedFile && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Selected: {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                </p>
+              )}
+            </div>
+
+            {/* Upload Button */}
             <Button 
               onClick={handleUpload}
-              disabled={uploading}
+              disabled={!selectedFile || isUploading || !synapse}
               className="bg-[#0090FF] hover:bg-[#0078CC] text-white"
             >
-              {uploading ? 'Uploading...' : 'Choose Files'}
+              {isUploading ? 'Uploading...' : 'Upload to Filecoin'}
             </Button>
-            {uploading && (
+
+            {/* Upload Progress */}
+            {isUploading && (
               <div className="mt-4">
-                <Progress value={66} className="w-full" />
+                <Progress value={uploadProgress} className="w-full" />
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  Uploading to Filecoin...
+                  Uploading to Filecoin via Synapse SDK... {uploadProgress}%
                 </p>
+              </div>
+            )}
+
+            {/* Error Messages */}
+            {synapseError && (
+              <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+                Synapse Error: {synapseError}
+              </p>
+            )}
+            {uploadError && (
+              <p className="text-sm text-red-600 dark:text-red-400 mt-2">
+                Upload Error: {uploadError}
+              </p>
+            )}
+
+            {/* Storage Payment */}
+            {costs && (
+              <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
+                  Storage Costs
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Storage: {costs.storageCostPerGB} USDFC per GB
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Retrieval: {costs.retrievalCostPerGB} USDFC per GB
+                </p>
+                <Button 
+                  onClick={handlePayForStorage}
+                  disabled={paymentProcessing}
+                  variant="outline"
+                  className="mt-2"
+                >
+                  {paymentProcessing ? 'Processing...' : 'Pay for 10GB Storage'}
+                </Button>
               </div>
             )}
           </div>
@@ -269,7 +368,7 @@ export default function StoragePage() {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDownload(file.pieceCID || '')}>
                         <Download className="mr-2 h-4 w-4" />
                         Download
                       </DropdownMenuItem>
