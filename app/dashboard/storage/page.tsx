@@ -2,78 +2,31 @@
 
 import React, { useState } from 'react'
 import { useAccount } from 'wagmi'
-import { useSynapse, useFileUpload, useFileDownload } from '@/hooks/useSynapse'
+import { useSynapse, useFileDownload } from '@/hooks/useSynapse'
+import { usePFFileUpload } from '@/hooks/usePFFileUpload'
 import { useUSDFCPayments, useStorageCosts } from '@/hooks/useUSDFCPayments'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { 
-  Upload, 
-  Download, 
-  Trash2, 
-  Eye, 
-  MoreHorizontal,
-  FileText,
-  Image,
-  Video,
-  Music,
-  Archive
-} from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+import { Upload, Download, Trash2, Eye, MoreHorizontal, FileText, Image, Video, Music, Archive } from 'lucide-react'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { useDatasetsPF } from '@/hooks/useDatasetsPF'
+import { DatasetsViewerPF } from '@/components/proofflow/DatasetsViewerPF'
+import { useBalancesPF } from '@/hooks/useBalancesPF'
 
 export default function StoragePage() {
   const { isConnected } = useAccount()
-  const { synapse, isLoading: synapseLoading, error: synapseError } = useSynapse()
-  const { uploadFile, isUploading, uploadProgress, error: uploadError } = useFileUpload()
+  const { synapse, isLoading: synapseLoading, error: synapseError, chain } = useSynapse()
+  const { uploadFileMutation, progress, uploadedInfo, handleReset, status } = usePFFileUpload()
+  const { isPending: isUploading, mutateAsync: uploadFile } = uploadFileMutation
   const { downloadFile, isDownloading, error: downloadError } = useFileDownload()
-  const { payForStorage, isProcessing: paymentProcessing } = useUSDFCPayments()
+  const { depositUSDFC, approveService, payForStorage, isProcessing: paymentProcessing } = useUSDFCPayments()
   const { costs, isLoading: costsLoading } = useStorageCosts()
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
-  const files = [
-    {
-      id: 1,
-      name: 'document.pdf',
-      size: '1.2 MB',
-      type: 'pdf',
-      uploadedAt: '2024-01-15',
-      status: 'verified',
-      cost: '$0.15'
-    },
-    {
-      id: 2,
-      name: 'image.jpg',
-      size: '850 KB',
-      type: 'image',
-      uploadedAt: '2024-01-14',
-      status: 'verified',
-      cost: '$0.08'
-    },
-    {
-      id: 3,
-      name: 'video.mp4',
-      size: '45.2 MB',
-      type: 'video',
-      uploadedAt: '2024-01-13',
-      status: 'verifying',
-      cost: '$2.10'
-    },
-    {
-      id: 4,
-      name: 'archive.zip',
-      size: '12.8 MB',
-      type: 'archive',
-      uploadedAt: '2024-01-12',
-      status: 'verified',
-      cost: '$0.85'
-    }
-  ]
+  const { data: datasets, isLoading: datasetsLoading, refetch: refetchDatasets } = useDatasetsPF()
+  const { data: balances } = useBalancesPF()
 
   const getFileIcon = (type: string) => {
     switch (type) {
@@ -114,8 +67,8 @@ export default function StoragePage() {
     if (!selectedFile) return
 
     try {
-      const result = await uploadFile(selectedFile)
-      console.log('File uploaded successfully:', result)
+      await uploadFile(selectedFile)
+      console.log('File uploaded successfully')
       // Reset file selection
       setSelectedFile(null)
       // You could add the uploaded file to the files list here
@@ -171,6 +124,12 @@ export default function StoragePage() {
         <p className="text-gray-600 dark:text-gray-400 mt-2">
           Upload, manage, and monitor your decentralized storage files.
         </p>
+        {/* Tabs */}
+        <div className="mt-4 grid grid-cols-3 text-center text-white/90">
+          <div className="py-3">Manage Storage</div>
+          <div className="py-3">Upload File</div>
+          <div className="py-3 border-b border-white">View Datasets</div>
+        </div>
       </div>
 
       {/* Storage Overview */}
@@ -178,48 +137,36 @@ export default function StoragePage() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Total Storage Used
+              FIL Balance
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              2.4 GB
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              Across {files.length} files
-            </p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{balances ? `${balances.filFormatted} FIL` : '...'}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Wallet</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Monthly Cost
+              USDFC Wallet
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-gray-900 dark:text-white">
-              $3.18
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              Pay-as-you-go billing
-            </p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{balances ? `${balances.usdfcWalletFormatted} USDFC` : '...'}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">In wallet</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
-              Verification Status
+              USDFC (Synapse)
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-              100%
-            </div>
-            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-              All files verified
-            </p>
+            <div className="text-2xl font-bold text-gray-900 dark:text-white">{balances ? `${balances.usdfcWarmFormatted} USDFC` : '...'}</div>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Deposited for storage</p>
           </CardContent>
         </Card>
       </div>
@@ -273,13 +220,16 @@ export default function StoragePage() {
               {isUploading ? 'Uploading...' : 'Upload to Filecoin'}
             </Button>
 
-            {/* Upload Progress */}
-            {isUploading && (
+            {/* Upload Status + Progress */}
+            {status && (
               <div className="mt-4">
-                <Progress value={uploadProgress} className="w-full" />
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
-                  Uploading to Filecoin via Synapse SDK... {uploadProgress}%
-                </p>
+                <p className={`text-sm ${status.includes('❌') ? 'text-red-600 dark:text-red-400' : status.includes('🎉') || status.includes('✅') ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`}>{status}</p>
+                {isUploading && (
+                  <div className="mt-2">
+                    <Progress value={progress} className="w-full" />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{progress}%</p>
+                  </div>
+                )}
               </div>
             )}
 
@@ -289,10 +239,25 @@ export default function StoragePage() {
                 Synapse Error: {synapseError}
               </p>
             )}
-            {uploadError && (
-              <p className="text-sm text-red-600 dark:text-red-400 mt-2">
-                Upload Error: {uploadError}
-              </p>
+            {/* Uploaded file info */}
+            {uploadedInfo && !isUploading && (
+              <div className="mt-6 bg-black text-white border border-gray-700 rounded-xl p-4 text-left">
+                <h4 className="font-semibold mb-2">File Upload Details</h4>
+                <div className="text-sm">
+                  <div>
+                    <span className="font-medium">File name:</span> {uploadedInfo.fileName}
+                  </div>
+                  <div>
+                    <span className="font-medium">File size:</span> {uploadedInfo.fileSize?.toLocaleString()} bytes
+                  </div>
+                  <div className="break-all">
+                    <span className="font-medium">Piece CID:</span> {uploadedInfo.pieceCid}
+                  </div>
+                  <div className="break-all">
+                    <span className="font-medium">Tx Hash:</span> {uploadedInfo.txHash}
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Storage Payment */}
@@ -307,83 +272,53 @@ export default function StoragePage() {
                 <p className="text-sm text-gray-600 dark:text-gray-400">
                   Retrieval: {costs.retrievalCostPerGB} USDFC per GB
                 </p>
-                <Button 
-                  onClick={handlePayForStorage}
-                  disabled={paymentProcessing}
-                  variant="outline"
-                  className="mt-2"
-                >
-                  {paymentProcessing ? 'Processing...' : 'Pay for 10GB Storage'}
-                </Button>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  <Button 
+                    onClick={async () => { try { await depositUSDFC('5') } catch(e){} }}
+                    disabled={paymentProcessing}
+                    variant="outline"
+                  >
+                    {paymentProcessing ? 'Processing...' : 'Deposit 5 USDFC'}
+                  </Button>
+                  <Button 
+                    onClick={async () => { try { await approveService('10') } catch(e){} }}
+                    disabled={paymentProcessing}
+                    variant="outline"
+                  >
+                    {paymentProcessing ? 'Processing...' : 'Approve for 10GB'}
+                  </Button>
+                  <Button 
+                    onClick={handlePayForStorage}
+                    disabled={paymentProcessing}
+                    variant="outline"
+                  >
+                    {paymentProcessing ? 'Processing...' : 'Pay for 10GB Storage'}
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const accountInfo = await synapse?.payments.accountInfo()
+                        console.log('[ProofFlow] payments.accountInfo', accountInfo)
+                        // quick allowance check for current file size scenario: 1 GiB sample
+                        const warmService = await synapse?.createStorage()
+                        console.log('[ProofFlow] warm storage address', synapse?.getWarmStorageAddress())
+                      } catch (e) {
+                        console.error('Allowance check failed', e)
+                      }
+                    }}
+                    variant="outline"
+                  >
+                    Check allowances
+                  </Button>
+                </div>
               </div>
             )}
           </div>
         </CardContent>
       </Card>
 
-      {/* Files List */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Files</CardTitle>
-          <CardDescription>
-            Manage your stored files and monitor their verification status
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {files.map((file) => (
-              <div key={file.id} className="flex items-center justify-between p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-                <div className="flex items-center gap-4">
-                  {getFileIcon(file.type)}
-                  <div>
-                    <h4 className="font-medium text-gray-900 dark:text-white">
-                      {file.name}
-                    </h4>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {file.size} • Uploaded {file.uploadedAt}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-900 dark:text-white">
-                      {file.cost}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      Storage cost
-                    </p>
-                  </div>
-                  
-                  {getStatusBadge(file.status)}
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="mr-2 h-4 w-4" />
-                        View Details
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handleDownload(file.pieceCID || '')}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      {/* Files List - live datasets */}
+      <DatasetsViewerPF />
     </div>
   )
 }
