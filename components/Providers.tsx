@@ -6,6 +6,7 @@ import { RainbowKitProvider, darkTheme, lightTheme } from '@rainbow-me/rainbowki
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
 import { config } from '@/lib/rainbowkit'
+import { SynapseProvider } from '@/providers/SynapseProvider'
 
 import '@rainbow-me/rainbowkit/styles.css'
 
@@ -32,7 +33,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <RainbowKitThemeProvider>
-          {children}
+          <SynapseProvider>
+            {children}
+          </SynapseProvider>
         </RainbowKitThemeProvider>
       </QueryClientProvider>
     </WagmiProvider>
