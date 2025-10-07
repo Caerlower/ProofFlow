@@ -50,6 +50,7 @@ const filecoinCalibration = {
 export const config = getDefaultConfig({
   appName: 'ProofFlow',
   projectId: process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID || 'your-project-id',
-  chains: [filecoinMainnet, filecoinCalibration, mainnet, polygon, optimism, arbitrum, base],
+  // Prefer Calibration testnet for development; keep mainnet omitted to avoid accidental usage
+  chains: [filecoinCalibration],
   ssr: true,
 })
