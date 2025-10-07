@@ -5,6 +5,7 @@ import { useAccount } from 'wagmi'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useDatasetsPF } from '@/hooks/useDatasetsPF'
 import { 
   Activity, 
   Upload, 
@@ -19,6 +20,7 @@ import {
 
 export default function ActivityPage() {
   const { isConnected } = useAccount()
+  const { data: datasets, isLoading } = useDatasetsPF()
 
   const activities = [
     {
@@ -216,7 +218,7 @@ export default function ActivityPage() {
         ))}
       </div>
 
-      {/* Activity Timeline */}
+      {/* Activity Timeline (live datasets/pieces) */}
       <Card>
         <CardHeader>
           <CardTitle>Recent Activity</CardTitle>
@@ -226,40 +228,43 @@ export default function ActivityPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {activities.map((activity, index) => (
-              <div key={activity.id} className="relative">
+            {isLoading && <p className="text-sm text-gray-500">Loading...</p>}
+            {datasets?.map((ds, index) => (
+              <div key={ds.pdpVerifierDataSetId} className="relative">
                 {/* Timeline line */}
-                {index < activities.length - 1 && (
+                {index < (datasets?.length || 0) - 1 && (
                   <div className="absolute left-6 top-12 w-0.5 h-16 bg-gray-200 dark:bg-gray-700" />
                 )}
                 
                 <div className="flex items-start gap-4">
                   {/* Icon */}
                   <div className="flex-shrink-0 w-12 h-12 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full flex items-center justify-center">
-                    {getActivityIcon(activity.type, activity.status)}
+                    {getActivityIcon('upload', 'completed')}
                   </div>
                   
                   {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-medium text-gray-900 dark:text-white">
-                        {activity.title}
+                        Dataset #{ds.pdpVerifierDataSetId}
                       </h4>
                       <div className="flex items-center gap-2">
-                        {getStatusBadge(activity.status)}
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {activity.timestamp}
-                        </span>
+                        {getStatusBadge(ds.isLive ? 'completed' : 'pending')}
                       </div>
                     </div>
                     
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                      {activity.description}
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">CDN: {ds.withCDN ? 'Yes' : 'No'}</p>
                     
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-                      {activity.details}
-                    </p>
+                    {ds.pieces?.length ? (
+                      <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                        <p>Pieces:</p>
+                        <ul className="mt-1 space-y-1">
+                          {ds.pieces.slice(0, 3).map((p) => (
+                            <li key={p.pieceId} className="break-all">#{p.pieceId} • {p.pieceCid}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </div>
