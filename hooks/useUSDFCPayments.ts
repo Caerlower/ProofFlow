@@ -2,6 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { useSynapse } from './useSynapse'
+import { ethers } from 'ethers'
 
 // Hook for USDFC payments and deposits
 export function useUSDFCPayments() {
@@ -19,9 +20,8 @@ export function useUSDFCPayments() {
     setError(null)
 
     try {
-      // Deposit USDFC tokens using the payments service
-      // Convert string amount to TokenAmount (assuming it's in wei/units)
-      const amountBigInt = BigInt(amount)
+      // Convert human-readable amount to 18-decimal units
+      const amountBigInt = ethers.parseUnits(amount, 18)
       const result = await synapse.payments.deposit(amountBigInt)
       return result
     } catch (err) {
@@ -43,9 +43,8 @@ export function useUSDFCPayments() {
     setError(null)
 
     try {
-      // Withdraw USDFC tokens using the payments service
-      // Convert string amount to TokenAmount (assuming it's in wei/units)
-      const amountBigInt = BigInt(amount)
+      // Convert human-readable amount to 18-decimal units
+      const amountBigInt = ethers.parseUnits(amount, 18)
       const result = await synapse.payments.withdraw(amountBigInt)
       return result
     } catch (err) {
@@ -67,8 +66,8 @@ export function useUSDFCPayments() {
     setError(null)
 
     try {
-      // Approve the warm storage service for the specified amount
-      const amountBigInt = BigInt(amount)
+      // Approve the warm storage service for the specified amount (18 decimals)
+      const amountBigInt = ethers.parseUnits(amount, 18)
       const result = await synapse.payments.approveService(
         synapse.getWarmStorageAddress(), // service address
         amountBigInt, // rate allowance
@@ -95,9 +94,8 @@ export function useUSDFCPayments() {
     setError(null)
 
     try {
-      // Approve service for storage using the payments service
-      // Convert string amount to TokenAmount (assuming it's in wei/units)
-      const amountBigInt = BigInt(amount)
+      // Approve service for storage using the payments service (18 decimals)
+      const amountBigInt = ethers.parseUnits(amount, 18)
       const result = await synapse.payments.approveService(
         synapse.getWarmStorageAddress(), // service address
         amountBigInt, // rate allowance
